@@ -7,7 +7,7 @@ pub struct RabbitCSV {
 }
 
 impl RabbitCSV {
-    pub fn new(file_name: &str) -> Self {
+    pub fn new(file_name: &str, headers: &Vec<&str>) -> Self {
         let size = fs::metadata(&file_name);
         let size = match size {
             Ok(size) => size.len(),
@@ -30,28 +30,7 @@ impl RabbitCSV {
         // write headers if file is empty
         if size == 0 {
             println!("Creating new file");
-
-            let headers = vec![
-                "Timestamp",
-                "Queue",
-                "Memory",
-                "M_Bytes",
-                "M_Total",
-                "M_Ready",
-                "M_Unack",
-                "M_Rate",
-                "M_Ready Rate",
-                "M_UnAck Rate",
-            ];
-
-            let _ = csv_writer.write_record(&headers);
-
-            // // Write header
-            // headers.iter().for_each(|header| {
-            //     print!("{:^15} ", header);
-            // });
-            // print!("\n");
-
+            let _ = csv_writer.write_record(headers);
             return RabbitCSV { csv_writer };
         }
 

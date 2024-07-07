@@ -35,7 +35,18 @@ async fn main() -> Result<()> {
 
     let filename = "data.csv";
 
-    let mut writer = csv_writer::RabbitCSV::new(&filename);
+    let headers = vec![
+        "Timestamp",
+        "Queue",
+        "M_Ready",
+        "M_Unack",
+        "M_Total",
+        "Rate Incoming",
+        "Rate Del/Get",
+        "Rate Ack",
+    ];
+
+    let mut writer = csv_writer::RabbitCSV::new(&filename, &headers);
 
     let client = Client::new();
 
@@ -50,28 +61,46 @@ async fn main() -> Result<()> {
             .json::<RabbitResponse>()
             .await?;
 
+        print!("{}[2J", 27 as char);
+        println!("Headers");
+
+        // Write header
+        headers.iter().for_each(|header| {
+            print!("{:^15} ", header.bright_white());
+        });
+        print!("\n");
+
+        let mut idx = 0;
         resp.items.iter_mut().for_each(|item| {
-            // item.timestamp = Some(timestamp.clone());
-            println!(
-                "{:>.15} {:.<15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15}",
-                &item.timestamp[5..19].to_string().blue(),
+            let cont = format!(
+                "{:>15} {:_<15} {:_>15} {:_>15} {:_>15} {:_>15} {:_>15} {:_>15}",
+                &item.timestamp.format("%m-%d %H:%M:%S").to_string().blue(),
                 &item.name.dimmed(),
-                &item.memory,
-                &item.message_bytes,
-                &item.messages,
                 &item.messages_ready,
                 &item.messages_unacknowledged,
-                &item.messages_details.rate,
-                &item.messages_ready_details.rate,
-                &item.messages_unacknowledged_details.rate
+                &item.messages,
+                &item.message_stats.publish_details.rate,
+                &item.message_stats.deliver_get_details.rate,
+                &item.message_stats.ack_details.rate,
             );
+
+            if idx % 2 == 0 {
+                println!("{cont}");
+            } else {
+                println!("{}", cont.bold().on_purple());
+            }
 
             let _ = writer.csv_writer.serialize(&item);
             let _ = writer.csv_writer.flush();
+
+            idx += 1;
         });
+        print!("\n");
+        print!("\n");
+        print!("\n");
+        print!("\n");
+        print!("\n");
 
         sleep(interval).await;
     }
-
-    // Ok(())
 }
