@@ -27,11 +27,8 @@ impl RabbitCSV {
             .terminator(Terminator::CRLF)
             .from_writer(file);
 
-        // write headers if file is empty
         if size == 0 {
-            println!("Creating new file");
-            let _ = csv_writer.write_record(headers);
-            return RabbitCSV { csv_writer };
+            csv_writer.write_record(headers).unwrap();
         }
 
         RabbitCSV { csv_writer }
