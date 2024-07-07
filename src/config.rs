@@ -16,7 +16,7 @@ impl Config {
         match env::var("RABBIT_ENDPOINT_URL") {
             Ok(_) => {}
             Err(_) => {
-                println!("Environment variables not set, reading .env file ...");
+                // println!("Environment variables not set, reading .env file ...");
                 dotenv().ok();
             }
         }
@@ -36,7 +36,8 @@ impl Config {
         let password =
             env::var("RABBIT_PASSWORD").expect("RABBIT_PASSWORD environment variable not set");
 
-        let filename = "data.csv";
+        let filename = env::var("OUTPUT_LOG").unwrap_or("data".to_string());
+        let filename = format!("{}-{}.csv", filename, chrono::Utc::now().format("%Y-%m-%d"));
 
         Config {
             url,

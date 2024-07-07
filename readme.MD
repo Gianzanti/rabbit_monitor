@@ -14,6 +14,7 @@ RABBIT_ENDPOINT_URL=http://127.0.0.1:8084 # The RabbitMQ management URL
 RABBIT_USERNAME=admin # The RabbitMQ username
 RABBIT_PASSWORD=password # The RabbitMQ password
 INTERVAL_SECS=1 # The interval in seconds to check the queues
+OUTPUT_FILE=output # The output file will be saved in the root of the project and with current date as suffix: output-2021-08-01.csv
 ```
 
 ## Compilation
