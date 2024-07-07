@@ -1,11 +1,14 @@
 use anyhow::Result;
-use csv::Writer;
+use colored::*;
 use dotenvy::dotenv;
 use reqwest::Client;
-use std::{env, thread, time::Duration};
+use std::env;
+use tokio::time::{sleep, Duration};
 // use tokio::signal;
 
+mod csv_writer;
 mod rabbit_response;
+
 use rabbit_response::RabbitResponse;
 
 #[tokio::main]
@@ -17,11 +20,13 @@ async fn main() -> Result<()> {
 
     let url =
         env::var("RABBIT_ENDPOINT_URL").expect("RABBIT_ENDPOINT_URL environment variable not set");
-    let interval = env::var("INTERVAL_SECS")
-        .expect("INTERVAL_SECS environment variable not set")
-        .parse::<u64>()
-        .unwrap_or(1);
-    let interval = Duration::from_secs(interval);
+
+    let interval = Duration::from_secs(
+        env::var("INTERVAL_SECS")
+            .expect("INTERVAL_SECS environment variable not set")
+            .parse::<u64>()
+            .unwrap_or(1),
+    );
 
     let username =
         env::var("RABBIT_USERNAME").expect("RABBIT_USERNAME environment variable not set");
@@ -30,36 +35,14 @@ async fn main() -> Result<()> {
 
     let filename = "data.csv";
 
-    let mut writer = Writer::from_path(filename)?;
-
-    let headers = vec![
-        "Timestamp",
-        "Queue",
-        "Memory",
-        "M_Bytes",
-        "M_Total",
-        "M_Ready",
-        "M_Unack",
-        "M_Rate",
-        "M_Ready Rate",
-        "M_UnAck Rate",
-    ];
-
-    writer.write_record(&headers)?; // Write header
-
-    headers.iter().for_each(|header| {
-        print!("{:^15} ", header);
-    });
-    print!("\n");
+    let mut writer = csv_writer::RabbitCSV::new(&filename);
 
     let client = Client::new();
 
     let request_url = format!("{}/api/queues/?page=1&page_size=10", url);
 
     loop {
-        let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-
-        let resp = client
+        let mut resp = client
             .get(&request_url)
             .basic_auth(&username, Some(&password))
             .send()
@@ -67,11 +50,12 @@ async fn main() -> Result<()> {
             .json::<RabbitResponse>()
             .await?;
 
-        resp.items.iter().for_each(|item| {
+        resp.items.iter_mut().for_each(|item| {
+            // item.timestamp = Some(timestamp.clone());
             println!(
                 "{:>.15} {:.<15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15} {:.>15}",
-                &timestamp[5..19].to_string(),
-                &item.name,
+                &item.timestamp[5..19].to_string().blue(),
+                &item.name.dimmed(),
                 &item.memory,
                 &item.message_bytes,
                 &item.messages,
@@ -82,25 +66,11 @@ async fn main() -> Result<()> {
                 &item.messages_unacknowledged_details.rate
             );
 
-            writer
-                .write_record(&[
-                    &timestamp,
-                    &item.name,
-                    &item.memory.to_string(),
-                    &item.message_bytes.to_string(),
-                    &item.messages.to_string(),
-                    &item.messages_ready.to_string(),
-                    &item.messages_unacknowledged.to_string(),
-                    &item.messages_details.rate.to_string(),
-                    &item.messages_ready_details.rate.to_string(),
-                    &item.messages_unacknowledged_details.rate.to_string(),
-                ])
-                .unwrap();
-
-            writer.flush().unwrap();
+            let _ = writer.csv_writer.serialize(&item);
+            let _ = writer.csv_writer.flush();
         });
 
-        thread::sleep(interval);
+        sleep(interval).await;
     }
 
     // Ok(())
