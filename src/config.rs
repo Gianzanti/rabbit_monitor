@@ -16,7 +16,6 @@ impl Config {
         match env::var("RABBIT_ENDPOINT_URL") {
             Ok(_) => {}
             Err(_) => {
-                // println!("Environment variables not set, reading .env file ...");
                 dotenv().ok();
             }
         }

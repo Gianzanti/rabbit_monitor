@@ -8,8 +8,6 @@ mod config;
 mod csv_writer;
 mod rabbit_response;
 
-use rabbit_response::RabbitResponse;
-
 #[tokio::main]
 async fn main() -> Result<()> {
     // tratar o signal (tokio)
@@ -40,20 +38,20 @@ async fn main() -> Result<()> {
             .basic_auth(&config.username, Some(&config.password))
             .send()
             .await?
-            .json::<RabbitResponse>()
+            .json::<rabbit_response::RabbitResponse>()
             .await?;
 
         print!("{}[2J", 27 as char);
         headers.iter().for_each(|header| {
-            print!("{:^15} ", header.bright_white());
+            print!("{:^17} ", header.bold().bright_white());
         });
-        print!("\n");
+        println!();
 
         resp.items.iter_mut().enumerate().for_each(|(idx, item)| {
             let cont = format!(
-                "{:>15} {:_<15} {:_>15} {:_>15} {:_>15} {:_>15} {:_>15} {:_>15}",
-                &item.timestamp.format("%m-%d %H:%M:%S").to_string().blue(),
-                &item.name.dimmed(),
+                "|{:>15} | {:_<15} | {:_>15} | {:_>15} | {:_>15} | {:_>15} | {:_>15} | {:_>15} |",
+                &item.timestamp.format("%m-%d %H:%M:%S").to_string(),
+                &item.name,
                 &item.messages_ready,
                 &item.messages_unacknowledged,
                 &item.messages,
@@ -63,9 +61,9 @@ async fn main() -> Result<()> {
             );
 
             if idx % 2 == 0 {
-                println!("{cont}");
+                println!("{}", cont.bold().on_truecolor(200, 200, 200));
             } else {
-                println!("{}", cont.bold().on_purple());
+                println!("{}", cont.bold().on_truecolor(150, 150, 255));
             }
 
             let _ = writer.csv_writer.serialize(&item);
