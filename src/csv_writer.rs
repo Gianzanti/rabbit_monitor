@@ -6,7 +6,7 @@ pub struct RabbitCSV {
 }
 
 impl RabbitCSV {
-    pub fn new(file_name: &str, headers: &Vec<&str>) -> Self {
+    pub fn new(file_name: &str, headers: &[&str]) -> Self {
         let size = fs::metadata(file_name);
         let size = match size {
             Ok(size) => size.len(),

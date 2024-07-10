@@ -10,6 +10,7 @@ mod rabbit_response;
 
 #[tokio::main]
 async fn main() {
+    // dotenv().ok();
     match exec().await {
         Ok(_) => (),
         Err(e) => eprintln!("Error: {}", e),
@@ -22,7 +23,7 @@ async fn exec() -> Result<()> {
 
     let config = config::Config::new().unwrap();
 
-    let headers = vec![
+    let headers = [
         "Timestamp",
         "Queue",
         "M_Ready",
@@ -36,7 +37,6 @@ async fn exec() -> Result<()> {
     let mut writer = csv_writer::RabbitCSV::new(&config.filename, &headers);
 
     let client = Client::new();
-
     let request_url = format!("{}/api/queues/?page=1&page_size=10", &config.url);
 
     loop {
