@@ -9,11 +9,18 @@ mod csv_writer;
 mod rabbit_response;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
+    match exec().await {
+        Ok(_) => (),
+        Err(e) => eprintln!("Error: {}", e),
+    }
+}
+
+async fn exec() -> Result<()> {
     // tratar o signal (tokio)
     // signal::ctrl_c().await?;
 
-    let config = config::Config::new();
+    let config = config::Config::new().unwrap();
 
     let headers = vec![
         "Timestamp",
@@ -41,15 +48,27 @@ async fn main() -> Result<()> {
             .json::<rabbit_response::RabbitResponse>()
             .await?;
 
+        // let resp = client
+        //     .get(&request_url)
+        //     .basic_auth(&config.username, Some(&config.password))
+        //     .send()
+        //     .await?;
+
+        // println!("Resp: {}", resp.text().await?);
+
         print!("{}[2J", 27 as char);
-        headers.iter().for_each(|header| {
-            print!("{:^17} ", header.bold().bright_white());
+        headers.iter().enumerate().for_each(|(idx, header)| {
+            if idx <= 1 {
+                print!("{:^17} ", header.bold().bright_white());
+            } else {
+                print!("{:^14} ", header.bold().bright_white());
+            }
         });
         println!();
 
         resp.items.iter_mut().enumerate().for_each(|(idx, item)| {
             let cont = format!(
-                "|{:>15} | {:_<15} | {:_>15} | {:_>15} | {:_>15} | {:_>15} | {:_>15} | {:_>15} |",
+                "|{:>15} | {:_<15} | {:_>12} | {:_>12} | {:_>12} | {:_>10.2}/s | {:_>10.2}/s | {:_>10.2}/s |",
                 &item.timestamp.format("%m-%d %H:%M:%S").to_string(),
                 &item.name,
                 &item.messages_ready,
